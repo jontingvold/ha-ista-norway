@@ -1,0 +1,6 @@
+import_historical_data:
+  name: Import historical data
+  description: >-
+    Import all available historical meter data from istaonline.no into
+    Home Assistant's long-term statistics. This is automatically done on
+    first setup, but can be triggered manually if needed.

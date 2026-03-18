@@ -111,6 +111,12 @@ The energy sensor is compatible with the Home Assistant Energy Dashboard:
 
 On first setup, the integration automatically imports **all available historical data** into Home Assistant's long-term statistics. Your Energy Dashboard graphs will be populated with historical readings from day one.
 
+To re-import historical data manually (e.g. after an update), go to **Developer Tools → Services** and call:
+
+```yaml
+service: ista_no.import_historical_data
+```
+
 ### Automation Example
 
 ```yaml
