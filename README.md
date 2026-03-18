@@ -4,7 +4,17 @@
 [![GitHub Release](https://img.shields.io/github/v/release/jontingvold/ha-ista-norway)](https://github.com/jontingvold/ha-ista-norway/releases)
 [![License](https://img.shields.io/github/license/jontingvold/ha-ista-norway)](LICENSE)
 
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=jontingvold&repository=ha-ista-norway&category=integration)
+
 Unofficial Home Assistant integration for Ista Norway ([istaonline.no](https://www.istaonline.no) and the Norwegian Ista EcoTrend app). Fetches daily meter readings for energy/heating (fjernvarme) in kWh, hot water in m³, and cold water in m³ — with historical data import and Energy Dashboard support.
+
+## Features
+
+- **Auto-discovery** of all meters on your account (energy, hot water, cold water)
+- **Historical data import** — imports all available history into HA long-term statistics on first setup
+- **Energy Dashboard compatible** — sensors use correct device classes and state classes
+- **Smart polling** — checks at 4 AM, then hourly until today's data arrives
+- **No YAML** — fully configured through the UI
 
 ---
 
@@ -18,7 +28,8 @@ This integration fetches data from the **istaonline.no** web portal.
 
 ## Prerequisites
 
-You need a Norwegian Ista Online / Ista EcoTrend account. Use the same username and password as you use on [istaonline.no](https://www.istaonline.no) or in the Ista EcoTrend app.
+- **Home Assistant** 2024.1.0 or newer
+- A **Norwegian Ista Online / Ista EcoTrend account** — use the same username and password as on [istaonline.no](https://www.istaonline.no) or in the Ista EcoTrend app
 
 If you don't have an account, contact your borettslag/housing cooperative or Ista Norway customer service (see footer on [ista.no](https://www.ista.no)).
 
@@ -46,15 +57,26 @@ If you don't have an account, contact your borettslag/housing cooperative or Ist
 
 Configuration is done entirely through the UI — no YAML needed.
 
+| Parameter | Description |
+|---|---|
+| **Username** | Your istaonline.no username (e.g. 51361444287) |
+| **Password** | Your istaonline.no password |
+
+### Setup
+
 1. Go to **Settings → Devices & Services**
 2. Click **+ Add Integration** (bottom right)
 3. Search for **"Ista"**
-4. Enter your **Username** (e.g. 51361444287) and **Password**
+4. Enter your username and password
 5. Click **Submit**
 
 The integration will appear under Devices & Services once configured.
 
-## Sensors
+---
+
+## Provided Entities
+
+### Meter Sensors
 
 The integration auto-discovers all meters on your account and creates one sensor per meter:
 
@@ -73,7 +95,11 @@ Each sensor reports the **cumulative meter reading** (Avlesning) and includes th
 | `meter_type` | ENERGY, HW, or CW |
 | `meter_id` | The meter number |
 
-## Energy Dashboard
+---
+
+## Use Cases
+
+### Energy Dashboard
 
 The energy sensor is compatible with the Home Assistant Energy Dashboard:
 
@@ -81,15 +107,32 @@ The energy sensor is compatible with the Home Assistant Energy Dashboard:
 2. Add the energy sensor under **Individual devices** (district heating / fjernvarme)
 3. Water sensors can be added under **Water consumption**
 
-## Historical Data
+### Historical Data
 
 On first setup, the integration automatically imports **all available historical data** into Home Assistant's long-term statistics. Your Energy Dashboard graphs will be populated with historical readings from day one.
 
+### Automation Example
+
+```yaml
+automation:
+  - alias: "High heating consumption alert"
+    trigger:
+      - platform: numeric_state
+        entity_id: sensor.ista_no_903026XXX
+        attribute: daily_consumption
+        above: 50
+    action:
+      - service: notify.mobile_app
+        data:
+          title: "High heating usage"
+          message: "Daily heating consumption exceeded 50 kWh"
+```
+
 ---
 
-## Polling Schedule
+## Data Update Mechanics
 
-The integration uses a smart polling schedule:
+The integration uses a smart polling schedule to minimize API requests:
 
 | Time | Behavior |
 |---|---|
@@ -99,15 +142,33 @@ The integration uses a smart polling schedule:
 
 Meter readings on istaonline.no are typically updated once daily.
 
-## Limitations
+---
+
+## Known Limitations
 
 - **No 2FA support** — if your account has two-factor authentication enabled, the integration cannot log in. Use the "remember this device" option on istaonline.no from your browser first.
+- **Norway only** — only works with the Norwegian Ista service (istaonline.no).
 - **Cloud polling** — data comes from istaonline.no's web interface, not a local API.
 - **Rate limiting** — istaonline.no has aggressive rate limiting. The polling schedule is conservative to avoid triggering it.
+- **Daily granularity** — readings are updated once per day, not in real-time.
 
 ---
 
-## Debug Logging
+## Troubleshooting
+
+### Integration not showing in "Add Integration"
+Make sure you **restarted Home Assistant** after installing via HACS or manually.
+
+### "Invalid username or password"
+Verify your credentials work on [istaonline.no](https://www.istaonline.no) directly. The username is a number (e.g. 51361444287).
+
+### "Rate limited" errors
+istaonline.no has aggressive rate limiting. Wait a few minutes and try again. The integration will automatically retry on the next polling cycle.
+
+### No sensor data
+Meter readings are typically updated once daily. If you just set up the integration, wait until the next day for data to appear.
+
+### Debug Logging
 
 To enable debug logging, add this to your `configuration.yaml`:
 
@@ -116,6 +177,18 @@ logger:
   logs:
     custom_components.ista_no: debug
 ```
+
+---
+
+## Removal
+
+1. Go to **Settings → Devices & Services**
+2. Find **Ista Norway** and click the three dots → **Delete**
+3. Optionally remove the integration files via HACS
+
+Note: Historical data imported into long-term statistics will remain in your HA database after removal.
+
+---
 
 ## Development
 
@@ -133,6 +206,12 @@ pip install requests beautifulsoup4 python-dotenv pytest pytest-asyncio
 pytest tests/ -v
 ```
 
-## API Documentation
+### API Documentation
 
 See [docs/ista-api.md](docs/ista-api.md) for details on the istaonline.no scraping flow.
+
+---
+
+## Disclaimer
+
+This is an **unofficial** integration and is not affiliated with, endorsed by, or connected to ista SE or ista Norge AS. Use at your own risk.
