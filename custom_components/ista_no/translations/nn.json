@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ista Norway",
+        "description": "Skriv inn brukarnamn og passord for istaonline.no. Data vert henta frå istaonline.no.",
+        "data": {
+          "username": "Brukarnamn (t.d. 51361444287)",
+          "password": "Passord"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Ugyldig brukarnamn eller passord.",
+      "cannot_connect": "Kunne ikkje kople til istaonline.no.",
+      "two_factor_required": "Tofaktorautentisering er påkravd, men er ikkje støtta enno.",
+      "unknown": "Ein uventa feil oppstod."
+    },
+    "abort": {
+      "already_configured": "Denne kontoen er allereie konfigurert."
+    }
+  }
+}

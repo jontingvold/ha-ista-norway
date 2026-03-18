@@ -1,0 +1,23 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ista Norway",
+        "description": "Enter your istaonline.no username and password. Data is fetched from istaonline.no.",
+        "data": {
+          "username": "Username (e.g. 51361444287)",
+          "password": "Password"
+        }
+      }
+    },
+    "error": {
+      "invalid_auth": "Invalid username or password.",
+      "cannot_connect": "Could not connect to istaonline.no.",
+      "two_factor_required": "Two-factor authentication is required but not supported yet.",
+      "unknown": "An unexpected error occurred."
+    },
+    "abort": {
+      "already_configured": "This account is already configured."
+    }
+  }
+}
