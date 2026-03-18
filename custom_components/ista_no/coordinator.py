@@ -21,7 +21,7 @@ from .api import (
     IstaResponseError,
     IstaTwoFactorError,
 )
-from .const import DOMAIN, METER_TYPES, UNIT
+from .const import DOMAIN, LABEL, METER_TYPES, UNIT
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -167,19 +167,23 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             _LOGGER.info("Starting historical data import from istaonline.no")
 
+            # Use the data we already have from the first fetch if possible,
+            # but also try to get the full historical range
             year_options = await self.client.get_available_year_ranges()
-            if not year_options:
-                _LOGGER.warning("No year ranges available for historical import")
-                return
 
-            from_year = year_options[0]
-            to_year = year_options[-1]
-
-            _LOGGER.info(
-                "Importing historical data from %s to %s", from_year, to_year
-            )
-
-            data = await self.client.fetch_all_meters(from_year, to_year)
+            if year_options:
+                from_year = year_options[0]
+                to_year = year_options[-1]
+                _LOGGER.info(
+                    "Importing historical data from %s to %s", from_year, to_year
+                )
+                data = await self.client.fetch_all_meters(from_year, to_year)
+            else:
+                _LOGGER.warning(
+                    "No year ranges found — using current data for historical import"
+                )
+                # Fall back to fetching with default (current year)
+                data = await self.client.fetch_all_meters()
 
             meter_readings: dict[str, list[dict[str, Any]]] = {}
             meter_types: dict[str, str] = {}
@@ -190,9 +194,11 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     meter_readings.setdefault(meter_id, []).append(row)
                     meter_types[meter_id] = mtype
 
+            total_imported = 0
             for meter_id, readings in meter_readings.items():
                 mtype = meter_types[meter_id]
-                statistic_id = f"sensor.ista_no_{meter_id}"
+                # Use integration domain as source for external statistics
+                statistic_id = f"{DOMAIN}:{meter_id}"
                 unit = UNIT[mtype]
 
                 if unit == "kWh":
@@ -203,8 +209,8 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 metadata = StatisticMetaData(
                     has_mean=False,
                     has_sum=True,
-                    name=f"ista {meter_id}",
-                    source="recorder",
+                    name=f"Ista {LABEL[mtype]} {meter_id}",
+                    source=DOMAIN,
                     statistic_id=statistic_id,
                     unit_of_measurement=ha_unit,
                 )
@@ -222,18 +228,28 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     statistics.append(
                         StatisticData(
                             start=dt,
+                            state=reading["reading"],
                             sum=reading["reading"],
                         )
                     )
 
                 if statistics:
                     async_import_statistics(self.hass, metadata, statistics)
+                    total_imported += len(statistics)
                     _LOGGER.info(
                         "Imported %d statistics for meter %s (%s)",
                         len(statistics),
                         meter_id,
                         mtype,
                     )
+
+            if total_imported > 0:
+                _LOGGER.info(
+                    "Historical data import complete: %d total data points",
+                    total_imported,
+                )
+            else:
+                _LOGGER.warning("Historical data import found no data to import")
 
         except Exception:
             _LOGGER.exception("Failed to import historical data")
