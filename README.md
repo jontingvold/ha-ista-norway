@@ -33,10 +33,14 @@ If you don't have an account, contact your borettslag/housing cooperative or Ist
 
 Configuration is done entirely through the UI — no YAML needed.
 
-1. Go to **Settings → Devices & Services → Add Integration**
-2. Search for **Ista Norway**
-3. Enter your **Username** (e.g. 51361444287) and **Password** (the same credentials you use on istaonline.no)
-4. Click Submit
+1. **Restart Home Assistant** after installing (required for new integrations)
+2. Go to **Settings → Devices & Services**
+3. Click **+ Add Integration** (bottom right)
+4. Search for **"Ista"**
+5. Enter your **Username** (e.g. 51361444287) and **Password** (the same credentials you use on istaonline.no)
+6. Click Submit
+
+The integration will appear under Devices & Services once configured.
 
 ## Sensors
 
