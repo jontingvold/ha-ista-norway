@@ -1,6 +1,27 @@
 # Ista Norway — Home Assistant Integration
 
-Home Assistant integration for Ista Norway ([istaonline.no](https://www.istaonline.no)). Fetches daily energy/heating (fjernvarme) in kWh, hot water (m³), and cold water (m³) meter readings with historical data import and Energy Dashboard support.
+Home Assistant integration for Ista Norway (istaonline.no and the Norwegian Ista EcoTrend app). Fetches daily meter readings for energy/heating (fjernvarme) in kWh, hot water in m³, and cold water in m³ — with historical data import and Energy Dashboard support.
+
+## About Ista
+
+[Ista](https://www.ista.com) is one of several companies that provide residential heating and water metering services to borettslag (housing cooperatives) and apartment complexes in Norway. If your building uses Ista for sub-metering, you can view your consumption data on [istaonline.no](https://www.istaonline.no) (web portal) or through the Ista EcoTrend mobile app.
+
+This integration fetches data from the **istaonline.no** web portal.
+
+**Note:** This integration only works with the **Norwegian** Ista service. Ista operates in many countries, but each national company has its own separate online portal and API. There is an existing Home Assistant integration called [ista EcoTrend](https://www.home-assistant.io/integrations/ista_ecotrend/) that works with the German market — this integration is separate and for Norway only.
+
+## Prerequisites
+
+You need a Norwegian Ista Online / Ista EcoTrend account to use this integration:
+
+1. Go to [istaonline.no](https://www.istaonline.no)
+2. Click **"Registrer ny bruker"** (Register new user)
+3. Enter your customer number — this is printed on the meter display or on correspondence from Ista/your housing cooperative
+4. Set a password
+
+Use the same username and password in this integration.
+
+If you don't have an account, contact Ista Norway customer service (see footer on [ista.no](https://www.ista.no)).
 
 ## Installation
 
