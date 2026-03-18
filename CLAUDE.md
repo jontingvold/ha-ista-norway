@@ -1,8 +1,10 @@
-# CLAUDE.md — Ista Norway HA Integration
+# CLAUDE.md — Ista Norway (unofficial) HA Integration
 
 ## Project Overview
 
-Custom Home Assistant integration that fetches daily meter readings (energy kWh, hot water m³, cold water m³) from [istaonline.no](https://www.istaonline.no). All config via HA UI — no hardcoded credentials.
+Unofficial Home Assistant integration that fetches daily meter readings (energy/heating kWh, hot water m³, cold water m³) from [istaonline.no](https://www.istaonline.no). Norway only. All config via HA UI — no hardcoded credentials.
+
+**GitHub:** https://github.com/jontingvold/ha-ista-norway
 
 ## Repository Structure
 
@@ -17,9 +19,12 @@ custom_components/ista_no/   # The HA integration
   sensor.py                  # Sensor entities per meter
   strings.json               # UI strings (source of truth)
   translations/              # en.json, nb.json, nn.json
+  brand/                     # Logo/icon images (HA 2026.3+ local brand support)
+hacs.json                    # HACS custom repository config
 docs/ista-api.md             # Public API documentation (redacted)
-tests/                       # Integration tests (real API, needs .env)
+tests/                       # Integration tests (offline + live API)
 private/                     # Git-ignored: original script, example queries with real data
+images/                      # Logo images for README/repo
 ```
 
 ## Key Architecture Decisions
@@ -27,11 +32,13 @@ private/                     # Git-ignored: original script, example queries wit
 - **`requests` via `asyncio.to_thread`** (not `aiohttp`): istaonline.no uses ASP.NET Telerik WebForms with strict form encoding validation. `aiohttp` encodes form data differently enough to trigger Telerik's EventValidation errors. `requests` works correctly.
 - **Smart polling schedule**: Check at 4am daily. If no data for today, poll hourly until it arrives. Once today's data is received, sleep until next 4am.
 - **Historical import**: On first setup, imports all available years into HA long-term statistics via `async_import_statistics`.
+- **Year range parsing**: The popup page uses load-on-demand RadComboBox dropdowns. Year options are extracted from `<input>` values and JavaScript `_text` fields (not `<li>` items).
+- **Error handling**: istaonline.no returns HTTP 200 for errors with error details in the HTML body. `api.py` has `_check_for_errors()` that detects WAF pages, ASP.NET errors, session expiry, and Norwegian error messages.
 
 ## Credentials & Privacy
 
 - **NEVER commit real credentials.** All user data lives in `private/` (git-ignored) and `.env` (git-ignored).
-- Docs use `REDACTED` for usernames/passwords and `XXX` for last 3 digits of meter IDs.
+- Docs and tests use `REDACTED` for usernames/passwords and `XXX`/`YYY` for last 3 digits of meter IDs.
 - The `.env` / `.env.example` files are ONLY for running integration tests.
 
 ## Testing
@@ -40,7 +47,7 @@ private/                     # Git-ignored: original script, example queries wit
 # Offline tests (always safe to run, no network needed)
 pytest tests/ -v -k "not LiveAPI"
 
-# Live API tests (needs .env with credentials — see below)
+# Live API tests (needs .env with credentials)
 cp .env.example .env   # Fill in real istaonline.no credentials
 pip install requests beautifulsoup4 python-dotenv pytest pytest-asyncio
 pytest tests/ -v
@@ -55,10 +62,11 @@ pytest tests/ -v
 - Fingerprint field accepts static all-zeros value
 - CSV uses Norwegian decimal separator (`,` → `.`)
 - After switching meter type, the returned HTML must be used as base for the next switch (ViewState chaining)
-- The site returns HTTP 200 for errors with error messages in HTML body — `api.py` has `_check_for_errors()` for this
+- Brand images in `custom_components/ista_no/brand/` are picked up automatically by HA 2026.3+ (no brands repo PR needed)
 
 ## Naming
 
 - Integration domain: `ista_no`
-- Display name: "Ista Norway"
+- Display name: "Ista Norway (unofficial)"
 - Data source: istaonline.no
+- Related: [ista EcoTrend](https://www.home-assistant.io/integrations/ista_ecotrend/) (official HA integration, Germany only)
