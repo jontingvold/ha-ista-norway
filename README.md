@@ -12,16 +12,9 @@ This integration fetches data from the **istaonline.no** web portal.
 
 ## Prerequisites
 
-You need a Norwegian Ista Online / Ista EcoTrend account to use this integration:
+You need a Norwegian Ista Online / Ista EcoTrend account. Use the same username and password as you use on [istaonline.no](https://www.istaonline.no) or in the Ista EcoTrend app.
 
-1. Go to [istaonline.no](https://www.istaonline.no)
-2. Click **"Registrer ny bruker"** (Register new user)
-3. Enter your customer number — this is printed on the meter display or on correspondence from Ista/your housing cooperative
-4. Set a password
-
-Use the same username and password in this integration.
-
-If you don't have an account, contact Ista Norway customer service (see footer on [ista.no](https://www.ista.no)).
+If you don't have an account, contact your borettslag/housing cooperative or Ista Norway customer service (see footer on [ista.no](https://www.ista.no)).
 
 ## Installation
 
