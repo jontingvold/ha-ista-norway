@@ -104,7 +104,7 @@ Each sensor reports the **cumulative meter reading** (Avlesning) and includes th
 The energy sensor is compatible with the Home Assistant Energy Dashboard:
 
 1. Go to **Settings → Dashboards → Energy**
-2. Add the energy sensor under **Individual devices** (district heating / fjernvarme)
+2. Add the energy sensor under **Gas consumption** (there is no dedicated category for residential heating/fjernvarme in HA — gas consumption is the closest match for district heating in kWh)
 3. Water sensors can be added under **Water consumption**
 
 ### Historical Data
