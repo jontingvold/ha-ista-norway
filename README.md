@@ -1,6 +1,6 @@
-# Ista Norway — Home Assistant Integration
+# Ista Norway (unofficial) — Home Assistant Integration
 
-Home Assistant integration for Ista Norway (istaonline.no and the Norwegian Ista EcoTrend app). Fetches daily meter readings for energy/heating (fjernvarme) in kWh, hot water in m³, and cold water in m³ — with historical data import and Energy Dashboard support.
+Unofficial Home Assistant integration for Ista Norway (istaonline.no and the Norwegian Ista EcoTrend app). Fetches daily meter readings for energy/heating (fjernvarme) in kWh, hot water in m³, and cold water in m³ — with historical data import and Energy Dashboard support.
 
 ## About Ista
 

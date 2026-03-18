@@ -1,6 +1,6 @@
 {
   "domain": "ista_no",
-  "name": "Ista Norway",
+  "name": "Ista Norway (unofficial)",
   "codeowners": [],
   "config_flow": true,
   "documentation": "https://github.com/jont/2026-ista",
