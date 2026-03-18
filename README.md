@@ -1,10 +1,6 @@
 # Ista Norway — Home Assistant Integration
 
-Custom Home Assistant integration that fetches daily meter readings from [istaonline.no](https://www.istaonline.no):
-
-- **Energy** (kWh) — district heating
-- **Hot water** (m³)
-- **Cold water** (m³)
+Home Assistant integration for Ista Norway ([istaonline.no](https://www.istaonline.no)). Fetches daily energy/heating (fjernvarme) in kWh, hot water (m³), and cold water (m³) meter readings with historical data import and Energy Dashboard support.
 
 ## Installation
 
