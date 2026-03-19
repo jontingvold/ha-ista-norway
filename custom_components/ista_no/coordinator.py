@@ -16,6 +16,7 @@ from homeassistant.components.recorder.statistics import (
 )
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy, UnitOfVolume
+from homeassistant.components.sensor import SensorDeviceClass
 from homeassistant.core import HomeAssistant
 from homeassistant.exceptions import ConfigEntryAuthFailed
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
@@ -209,8 +210,10 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
                 if unit == "kWh":
                     ha_unit = UnitOfEnergy.KILO_WATT_HOUR
+                    unit_class = SensorDeviceClass.ENERGY
                 else:
                     ha_unit = UnitOfVolume.CUBIC_METERS
+                    unit_class = SensorDeviceClass.WATER
 
                 metadata = StatisticMetaData(
                     mean_type=StatisticMeanType.NONE,
@@ -219,6 +222,7 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     source=DOMAIN,
                     statistic_id=statistic_id,
                     unit_of_measurement=ha_unit,
+                    unit_class=unit_class.value,
                 )
 
                 readings.sort(key=lambda r: r["date"])
