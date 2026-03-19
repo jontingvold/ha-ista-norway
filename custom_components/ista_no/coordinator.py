@@ -6,7 +6,11 @@ import logging
 from datetime import datetime, time, timedelta, timezone
 from typing import Any
 
-from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
+from homeassistant.components.recorder.models import (
+    StatisticData,
+    StatisticMeanType,
+    StatisticMetaData,
+)
 from homeassistant.components.recorder.statistics import (
     async_add_external_statistics,
 )
@@ -209,7 +213,7 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     ha_unit = UnitOfVolume.CUBIC_METERS
 
                 metadata = StatisticMetaData(
-                    has_mean=False,
+                    mean_type=StatisticMeanType.NONE,
                     has_sum=True,
                     name=f"Ista {LABEL[mtype]} {meter_id}",
                     source=DOMAIN,
