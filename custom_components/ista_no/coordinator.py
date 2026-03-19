@@ -7,7 +7,9 @@ from datetime import datetime, time, timedelta, timezone
 from typing import Any
 
 from homeassistant.components.recorder.models import StatisticData, StatisticMetaData
-from homeassistant.components.recorder.statistics import async_import_statistics
+from homeassistant.components.recorder.statistics import (
+    async_add_external_statistics,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import UnitOfEnergy, UnitOfVolume
 from homeassistant.core import HomeAssistant
@@ -234,7 +236,7 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     )
 
                 if statistics:
-                    async_import_statistics(self.hass, metadata, statistics)
+                    async_add_external_statistics(self.hass, metadata, statistics)
                     total_imported += len(statistics)
                     _LOGGER.info(
                         "Imported %d statistics for meter %s (%s)",
