@@ -172,26 +172,40 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     async def _import_historical_data(self) -> None:
         """Import all available historical data into HA long-term statistics."""
         try:
-            _LOGGER.info("Starting historical data import from istaonline.no")
+            _LOGGER.info("=== Historical data import started ===")
 
-            # Use the data we already have from the first fetch if possible,
-            # but also try to get the full historical range
+            # Discover available year ranges
+            _LOGGER.info("Fetching available year ranges...")
             year_options = await self.client.get_available_year_ranges()
+            _LOGGER.info("Year ranges found: %s", year_options)
 
             if year_options:
                 from_year = year_options[0]
                 to_year = year_options[-1]
                 _LOGGER.info(
-                    "Importing historical data from %s to %s", from_year, to_year
+                    "Fetching meter data from %s to %s...", from_year, to_year
                 )
                 data = await self.client.fetch_all_meters(from_year, to_year)
             else:
                 _LOGGER.warning(
-                    "No year ranges found — using current data for historical import"
+                    "No year ranges found — fetching with default date range"
                 )
-                # Fall back to fetching with default (current year)
                 data = await self.client.fetch_all_meters()
 
+            # Log what we got back
+            for mtype in METER_TYPES:
+                rows = data.get(mtype, [])
+                if rows:
+                    meters = sorted(set(r["meter"] for r in rows))
+                    dates = sorted(set(r["date"] for r in rows))
+                    _LOGGER.info(
+                        "  %s: %d readings, meters=%s, dates=%s to %s",
+                        mtype, len(rows), meters, dates[0], dates[-1],
+                    )
+                else:
+                    _LOGGER.info("  %s: 0 readings", mtype)
+
+            # Group readings by meter
             meter_readings: dict[str, list[dict[str, Any]]] = {}
             meter_types: dict[str, str] = {}
 
@@ -201,10 +215,16 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     meter_readings.setdefault(meter_id, []).append(row)
                     meter_types[meter_id] = mtype
 
+            _LOGGER.info(
+                "Found %d meters: %s",
+                len(meter_readings),
+                list(meter_readings.keys()),
+            )
+
+            # Import statistics for each meter
             total_imported = 0
             for meter_id, readings in meter_readings.items():
                 mtype = meter_types[meter_id]
-                # Use integration domain as source for external statistics
                 statistic_id = f"{DOMAIN}:{meter_id}"
                 unit = UNIT[mtype]
 
@@ -233,6 +253,10 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                         dt = datetime.strptime(reading["date"], "%Y-%m-%d")
                         dt = dt.replace(tzinfo=timezone.utc)
                     except ValueError:
+                        _LOGGER.warning(
+                            "  Skipping reading with invalid date: %s",
+                            reading["date"],
+                        )
                         continue
 
                     statistics.append(
@@ -244,13 +268,25 @@ class IstaCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     )
 
                 if statistics:
-                    async_add_external_statistics(self.hass, metadata, statistics)
-                    total_imported += len(statistics)
                     _LOGGER.info(
-                        "Imported %d statistics for meter %s (%s)",
+                        "  Importing %d data points for meter %s (%s, %s) "
+                        "— statistic_id=%s, first=%s (%.2f), last=%s (%.2f)",
                         len(statistics),
                         meter_id,
                         mtype,
+                        ha_unit,
+                        statistic_id,
+                        readings[0]["date"],
+                        readings[0]["reading"],
+                        readings[-1]["date"],
+                        readings[-1]["reading"],
+                    )
+                    async_add_external_statistics(self.hass, metadata, statistics)
+                    total_imported += len(statistics)
+                    _LOGGER.info("  Done importing meter %s", meter_id)
+                else:
+                    _LOGGER.warning(
+                        "  No valid statistics for meter %s (%s)", meter_id, mtype
                     )
 
             if total_imported > 0:
