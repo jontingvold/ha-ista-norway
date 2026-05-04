@@ -38,6 +38,11 @@ We don't yet know whether the 503 is:
 - Setup now raises `ConfigEntryNotReady` on `IstaConnectionError` /
   `IstaResponseError`, so HA will retry with backoff instead of marking the
   entry permanently failed.
+- `_sync_request` retries once after 5s on 502/503/504, so a single blip
+  doesn't surface to the user at all.
+- `_sync_request` now logs the response body + `Server` / `cf-ray` headers
+  on any HTTP error, so the next 503 will tell us whether it's a Cloudflare
+  WAF block or an origin outage.
 
 **To investigate**
 
@@ -45,10 +50,5 @@ We don't yet know whether the 503 is:
       different IPs and times-of-day. Capture status code + response body for
       a 503 to confirm whether it's WAF-tagged (look for `cf-ray`,
       `Server: cloudflare`, or Telerik error markup).
-- [ ] Check whether the body of a 503 contains useful detail we should log
-      (we currently only log the status code via `requests.HTTPError`).
-- [ ] Decide whether to add a small bounded retry inside `_sync_get` /
-      `_sync_post` for 502/503/504 (e.g. 1 retry after 5s) so that single
-      blips don't even surface as `ConfigEntryNotReady`.
 - [ ] Once root cause is known, document the maintenance/WAF behavior in
       `docs/ista-api.md`.

@@ -12,6 +12,7 @@ import csv
 import io
 import logging
 import re
+import time
 from datetime import datetime
 from typing import Any
 
@@ -267,59 +268,65 @@ class IstaClient:
 
     # ── Sync HTTP methods (run via to_thread) ───────────────────────────────
 
-    def _sync_get(self, url: str) -> requests.Response:
-        """GET request with error handling."""
-        try:
-            r = self._session.get(url, timeout=30)
-            r.raise_for_status()
-            return r
-        except requests.Timeout as err:
-            _LOGGER.error("Request timed out: GET %s", url)
-            raise IstaConnectionError(f"Request timed out: {url}") from err
-        except requests.exceptions.SSLError as err:
-            _LOGGER.error("SSL error connecting to %s: %s", url, err)
-            raise IstaConnectionError(
-                f"SSL certificate error connecting to istaonline.no: {err}"
-            ) from err
-        except requests.ConnectionError as err:
-            _LOGGER.error("Connection failed: GET %s: %s", url, err)
-            raise IstaConnectionError(f"Connection failed: {err}") from err
-        except requests.HTTPError as err:
-            status = err.response.status_code if err.response is not None else "?"
-            _LOGGER.error("HTTP %s from GET %s", status, url)
-            if status == 429:
+    _RETRY_STATUSES = (502, 503, 504)
+    _MAX_RETRIES = 1
+    _RETRY_BACKOFF_S = 5.0
+
+    def _sync_request(
+        self, method: str, url: str, **kwargs: Any
+    ) -> requests.Response:
+        """HTTP request with error translation and bounded retry on 5xx."""
+        attempt = 0
+        while True:
+            try:
+                r = self._session.request(method, url, timeout=30, **kwargs)
+                r.raise_for_status()
+                return r
+            except requests.Timeout as err:
+                _LOGGER.error("Request timed out: %s %s", method, url)
+                raise IstaConnectionError(f"Request timed out: {url}") from err
+            except requests.exceptions.SSLError as err:
+                _LOGGER.error("SSL error connecting to %s: %s", url, err)
                 raise IstaConnectionError(
-                    "Rate limited by istaonline.no (429). Try again later."
+                    f"SSL certificate error connecting to istaonline.no: {err}"
                 ) from err
-            raise IstaConnectionError(f"HTTP error {status}: {err}") from err
+            except requests.ConnectionError as err:
+                _LOGGER.error("Connection failed: %s %s: %s", method, url, err)
+                raise IstaConnectionError(f"Connection failed: {err}") from err
+            except requests.HTTPError as err:
+                resp = err.response
+                status = resp.status_code if resp is not None else "?"
+                # Log body + diagnostic headers so we can tell a WAF block from
+                # an origin outage when the only signal is a status code.
+                server = resp.headers.get("Server", "") if resp is not None else ""
+                cf_ray = resp.headers.get("cf-ray", "") if resp is not None else ""
+                body = resp.text[:500] if resp is not None else ""
+                _LOGGER.error(
+                    "HTTP %s from %s %s (Server=%r cf-ray=%r) body=%.500s",
+                    status, method, url, server, cf_ray, body,
+                )
+                if status == 429:
+                    raise IstaConnectionError(
+                        "Rate limited by istaonline.no (429). Try again later."
+                    ) from err
+                if status in self._RETRY_STATUSES and attempt < self._MAX_RETRIES:
+                    attempt += 1
+                    _LOGGER.warning(
+                        "Retrying %s %s after HTTP %s in %.1fs (attempt %d/%d)",
+                        method, url, status, self._RETRY_BACKOFF_S,
+                        attempt, self._MAX_RETRIES,
+                    )
+                    time.sleep(self._RETRY_BACKOFF_S)
+                    continue
+                raise IstaConnectionError(f"HTTP error {status}: {err}") from err
+
+    def _sync_get(self, url: str) -> requests.Response:
+        return self._sync_request("GET", url)
 
     def _sync_post(
         self, url: str, data: dict[str, str]
     ) -> requests.Response:
-        """POST request with error handling."""
-        try:
-            r = self._session.post(url, data=data, allow_redirects=True, timeout=30)
-            r.raise_for_status()
-            return r
-        except requests.Timeout as err:
-            _LOGGER.error("Request timed out: POST %s", url)
-            raise IstaConnectionError(f"Request timed out: {url}") from err
-        except requests.exceptions.SSLError as err:
-            _LOGGER.error("SSL error connecting to %s: %s", url, err)
-            raise IstaConnectionError(
-                f"SSL certificate error connecting to istaonline.no: {err}"
-            ) from err
-        except requests.ConnectionError as err:
-            _LOGGER.error("Connection failed: POST %s: %s", url, err)
-            raise IstaConnectionError(f"Connection failed: {err}") from err
-        except requests.HTTPError as err:
-            status = err.response.status_code if err.response is not None else "?"
-            _LOGGER.error("HTTP %s from POST %s", status, url)
-            if status == 429:
-                raise IstaConnectionError(
-                    "Rate limited by istaonline.no (429). Try again later."
-                ) from err
-            raise IstaConnectionError(f"HTTP error {status}: {err}") from err
+        return self._sync_request("POST", url, data=data, allow_redirects=True)
 
     def _sync_authenticate(self) -> str:
         """Synchronous login flow."""
