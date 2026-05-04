@@ -9,8 +9,15 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_PASSWORD, CONF_USERNAME, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import ConfigEntryAuthFailed, ConfigEntryNotReady
 
-from .api import IstaClient
+from .api import (
+    IstaAuthError,
+    IstaClient,
+    IstaConnectionError,
+    IstaResponseError,
+    IstaTwoFactorError,
+)
 from .const import DOMAIN
 from .coordinator import IstaCoordinator
 
@@ -27,7 +34,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     password = entry.data[CONF_PASSWORD]
 
     client = IstaClient(username, password)
-    await client.authenticate()
+    try:
+        await client.authenticate()
+    except (IstaAuthError, IstaTwoFactorError) as err:
+        raise ConfigEntryAuthFailed(str(err)) from err
+    except (IstaConnectionError, IstaResponseError) as err:
+        raise ConfigEntryNotReady(str(err)) from err
 
     coordinator = IstaCoordinator(hass, client, entry)
     await coordinator.async_config_entry_first_refresh()
