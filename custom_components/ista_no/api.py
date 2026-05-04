@@ -276,7 +276,7 @@ class IstaClient:
         except requests.Timeout as err:
             _LOGGER.error("Request timed out: GET %s", url)
             raise IstaConnectionError(f"Request timed out: {url}") from err
-        except requests.SSLError as err:
+        except requests.exceptions.SSLError as err:
             _LOGGER.error("SSL error connecting to %s: %s", url, err)
             raise IstaConnectionError(
                 f"SSL certificate error connecting to istaonline.no: {err}"
@@ -304,7 +304,7 @@ class IstaClient:
         except requests.Timeout as err:
             _LOGGER.error("Request timed out: POST %s", url)
             raise IstaConnectionError(f"Request timed out: {url}") from err
-        except requests.SSLError as err:
+        except requests.exceptions.SSLError as err:
             _LOGGER.error("SSL error connecting to %s: %s", url, err)
             raise IstaConnectionError(
                 f"SSL certificate error connecting to istaonline.no: {err}"
